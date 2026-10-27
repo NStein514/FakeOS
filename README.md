@@ -1,6 +1,6 @@
 # Dead Letter — FakeOS
 
-A self-contained, responsive, desktop-and-mobile React mystery played through Mara’s fictional phone. Explore Messages, Mail, Contacts, Files, and the Wave social feed; clues can surface an encrypted contact, recover a hidden backup, and alter the feed.
+A self-contained, responsive, desktop-and-mobile React mystery played through a fictional device. Explore Messages, Mail, Contacts, Files, and the Wave social feed; clues can surface an encrypted contact, recover a hidden backup, and alter the feed.
 
 ## Afterlight Story Loom
 
