@@ -78,6 +78,45 @@ const SIGNALS = [
   { channel: 'a borrowed name', note: 'an alias that nobody in the contact list remembers adding', wave: 'This person has been on the feed for months. Nobody remembers meeting them.' },
 ];
 
+const FACTIONS = [
+  'the Night Transit Office', 'the Municipal Memory Board', 'the Lantern Cooperative',
+  'the Ninth Platform Union', 'the Department of Unclaimed Names', 'the Glasshouse Trust',
+  'the Civic Weather Service', 'the After-Hours Switchboard',
+];
+
+const COMPLICATIONS = [
+  'the only witness remembers the night in the wrong order',
+  'the original file changes whenever it is copied',
+  'a public safety alert describes the investigators instead of the incident',
+  'the safe meeting place has been quietly demolished',
+  'someone has been using the ally’s number to send false instructions',
+  'the missing person left two mutually exclusive goodbyes',
+  'the suspect is protecting a witness who does not know they are in danger',
+  'every copy contains a different final sentence',
+];
+
+const COUNTERCLUES = [
+  'a timestamp from before the phone was manufactured',
+  'a receipt bearing the handwriting of someone who cannot write',
+  'a city map with one street removed from every digital copy',
+  'a contact photo reflected in a window that was bricked over',
+  'an outgoing call logged during a total network outage',
+  'a signature matching a person who was never officially born',
+  'a train ticket validated at a station with no platform',
+  'an empty audio track that still casts a waveform-shaped shadow',
+];
+
+const MEMORY_FRAGMENTS = [
+  'You promised to come back before the lamps went out.',
+  'We said we would remember it differently, not forget it.',
+  'If the archive goes quiet, ask who taught it your name.',
+  'I left the porch light on for the person I used to be.',
+  'Nobody disappears alone; somebody always keeps the place.',
+  'The first version was kinder. That is how I know it was false.',
+  'Do not trust the map that knows where you are going.',
+  'I remember the ending. It is the beginning that keeps changing.',
+];
+
 const OMENS = [
   'The city clock shows a minute that never happened.',
   'Someone has put every clock in this block five minutes behind.',
@@ -125,11 +164,35 @@ function selectDistinct(choose, collection, excludedNames = []) {
 }
 
 export const STORY_CHAPTER_COUNT = 5;
+const SECOND_EPISODE_ARCS = {
+  'the-open-signal': {
+    title: 'The Witness Network',
+    teaser: 'The truth went public. Now someone is answering from inside the archive.',
+    opening: 'The public record has changed overnight. A reply arrives with a witness list that should not exist.',
+    pressure: 'Every repost adds a new witness—and a new person who wants them silenced.',
+    legacy: 'The signal you opened becomes a map other people can follow.',
+  },
+  'the-living-archive': {
+    title: 'The Unwritten Room',
+    teaser: 'You protected the witnesses. One of them remembers a room that is missing from every map.',
+    opening: 'The witnesses kept their copies safe. One copy contains a room none of them remembers entering.',
+    pressure: 'The room appears only in private copies; comparing them may destroy the one thing they agree on.',
+    legacy: 'The archive you protected has room for one more impossible memory.',
+  },
+  'the-quiet-door': {
+    title: 'The Number That Stayed',
+    teaser: 'You erased the trail. At the same minute each night, the disconnected phone rings again.',
+    opening: 'The trail went dark. The phone still rings at the same minute, carrying a call from the erased route.',
+    pressure: 'Following the ring could reveal who escaped—or rebuild the trail you erased.',
+    legacy: 'The silence you chose has started answering back.',
+  },
+};
+
 const CHARACTER_CONFIGURATIONS = ROSTERS.missing.reduce((total, missing) => total + ROSTERS.ally
   .filter((ally) => ally !== missing.name)
   .reduce((count, ally) => count + ROSTERS.suspect
     .filter((suspect) => suspect !== missing.name && suspect !== ally).length, 0), 0);
-export const STORY_TEMPLATE_COUNT = CHARACTER_CONFIGURATIONS * ROSTERS.correspondent.length * PLACES.length * ARTIFACTS.length * MOTIVES.length * SIGNALS.length * OMENS.length * EPITHETS.length * 2 ** 4 * 3;
+export const STORY_TEMPLATE_COUNT = CHARACTER_CONFIGURATIONS * ROSTERS.correspondent.length * PLACES.length * ARTIFACTS.length * MOTIVES.length * SIGNALS.length * OMENS.length * EPITHETS.length * FACTIONS.length * COMPLICATIONS.length * COUNTERCLUES.length * MEMORY_FRAGMENTS.length * 2 ** 4 * 3;
 
 export function createStory(seed) {
   const normalizedSeed = String(seed || 'afterlight').slice(0, 80);
@@ -145,6 +208,10 @@ export function createStory(seed) {
   const signal = SIGNALS[choose(SIGNALS.length)];
   const omen = OMENS[choose(OMENS.length)];
   const episodeTitle = EPITHETS[choose(EPITHETS.length)];
+  const faction = FACTIONS[choose(FACTIONS.length)];
+  const complication = COMPLICATIONS[choose(COMPLICATIONS.length)];
+  const counterclue = COUNTERCLUES[choose(COUNTERCLUES.length)];
+  const memoryFragment = MEMORY_FRAGMENTS[choose(MEMORY_FRAGMENTS.length)];
 
   return {
     seed: normalizedSeed,
@@ -158,12 +225,17 @@ export function createStory(seed) {
     motive,
     signal,
     omen,
+    faction,
+    complication,
+    counterclue,
+    memoryFragment,
+    episodeNumber: 1,
     chapters: [
       {
         title: 'The message that arrived late',
         app: 'Messages',
         icon: 'message',
-        summary: `${missing.name} is missing. A message on their own phone arrived after the number was disconnected. It contains a clue pointing to ${place.name}.`,
+        summary: `${missing.name} is missing. A message on their own phone arrived after the number was disconnected. It contains a clue pointing to ${place.name}. ${memoryFragment}`,
         prompt: `A message from ${missing.name} appears on a disconnected number. What do you do?`,
         choices: [
           { id: 'trust', label: `Trust ${missing.name}`, description: 'Reply before the signal disappears.', message: `I believe you. What can I do?` },
@@ -174,7 +246,7 @@ export function createStory(seed) {
         title: 'The signal underneath',
         app: 'Wave',
         icon: 'wave',
-        summary: `A Wave post leads to ${signal.note}. Meanwhile, ${correspondent} confirms that ${place.time} is the last chance to get there.`,
+        summary: `A Wave post leads to ${signal.note}. Meanwhile, ${correspondent} confirms that ${place.time} is the last chance to get there. ${faction} has quietly removed every public mention of the signal.`,
         prompt: `The signal is ${signal.channel}. Do you leave a trace, or keep the trail invisible?`,
         choices: [
           { id: 'broadcast', label: 'Echo the signal', description: 'Leave one person a way to find the evidence.', message: 'Wave picks up your echo. The wrong people may hear it, too.' },
@@ -185,7 +257,7 @@ export function createStory(seed) {
         title: 'A name in the margins',
         app: 'Contacts',
         icon: 'contacts',
-        summary: `The backup restores two contact cards: ${ally.name}, an old friend, and ${suspect.name}, who was last seen near ${place.name}. Both know about ${motive}.`,
+        summary: `The backup restores two contact cards: ${ally.name}, an old friend, and ${suspect.name}, who was last seen near ${place.name}. Both know about ${motive}. The trail is complicated: ${complication}.`,
         prompt: `Two people claim they can help. Who gets the whole truth?`,
         choices: [
           { id: 'trust-ally', label: `Call ${ally.name}`, description: 'Trust the friend who stayed out of the records.', message: `${ally.name} answers on the first ring. “I kept the original safe.”` },
@@ -196,7 +268,7 @@ export function createStory(seed) {
         title: 'The message in the outbox',
         app: 'Mail',
         icon: 'mail',
-        summary: `${ally.name} left an unsent email explaining how ${suspect.name} tracked the original. Its headers expose a route to ${place.name}; forwarding it would make the route easier to follow.`,
+        summary: `${ally.name} left an unsent email explaining how ${suspect.name} tracked the original. Its headers expose a route to ${place.name}; forwarding it would make the route easier to follow. One detail contradicts the story: ${counterclue}.`,
         prompt: 'The unsent email could get help to the witnesses—or put the original in danger. What do you do?',
         choices: [
           { id: 'forward-email', label: 'Forward the unedited thread', description: 'Give the correspondent the full context, including the trail.', message: 'I am forwarding the whole thread. The original should not stay with one person.' },
@@ -207,7 +279,7 @@ export function createStory(seed) {
         title: 'The last copy',
         app: 'Files',
         icon: 'files',
-        summary: `The file ${artifact.file} contains ${motive}. The next choice decides whether anyone else will ever see it.`,
+        summary: `The file ${artifact.file} contains ${motive}. It implicates ${faction}, but ${complication}. The next choice decides whether anyone else will ever see it.`,
         prompt: 'One file. One decision. Where does the truth go?',
         choices: [
           { id: 'publish', label: 'Send it to everyone', description: 'The truth will survive, even if it costs you.', message: 'The message leaves the outbox. Its recipients cannot be recalled.' },
@@ -259,8 +331,47 @@ export function chooseStoryBranch(progress, branchId) {
   return { progress: result, selected, chapter };
 }
 
+function attachFollowUp(ending, story, endingId) {
+  if (story.episodeNumber !== 1) return ending;
+  return { ...ending, followUp: SECOND_EPISODE_ARCS[ending.id] };
+}
+
+export function createSequelStory(parentStory, ending) {
+  const arc = SECOND_EPISODE_ARCS[ending?.id];
+  if (!parentStory || parentStory.episodeNumber !== 1 || parentStory.chapters?.length !== STORY_CHAPTER_COUNT || !arc || ending.followUp?.title !== arc.title) return null;
+  const sequel = createStory(`${parentStory.seed}-episode-two-${ending.id}`);
+  const chapters = sequel.chapters.map((chapter, index) => ({
+    ...chapter,
+    title: [
+      'The answer after the ending',
+      'A signal with witnesses',
+      'The names the archive missed',
+      'A second message in the outbox',
+      'What the next copy costs',
+    ][index],
+    summary: [
+      `${arc.opening} ${sequel.memoryFragment} The new trace points to ${sequel.place.name}.`,
+      `${arc.legacy} ${sequel.faction} has noticed the new ${sequel.signal.channel} signal. ${arc.pressure}`,
+      `${sequel.ally.name} and ${sequel.suspect.name} disagree about ${sequel.complication}. Both have seen ${sequel.counterclue}.`,
+      `${sequel.ally.name} sends a new unsent thread about ${sequel.counterclue}. ${arc.pressure}`,
+      `The new evidence is ${sequel.artifact.file}. It may expose ${sequel.motive}; ${arc.legacy}`,
+    ][index],
+    prompt: index === 0 ? `After ${ending.title}, do you trust the new message or ask how it found you?` : chapter.prompt,
+  }));
+  return {
+    ...sequel,
+    episodeNumber: 2,
+    episodeTitle: `${arc.title}: ${sequel.episodeTitle}`,
+    parentEndingId: ending.id,
+    parentEndingTitle: ending.title,
+    arc,
+    chapters,
+  };
+}
+
 function createEnding(story, endingId, choices) {
-  const { missing, ally, suspect, correspondent, place, motive } = story;
+  const { missing, ally, suspect, place, motive } = story;
+  const correspondent = story.correspondent.name;
   const signalIsPublic = choices[2] === 'broadcast';
   const trustWasEarned = choices[1] === 'verify';
   const witness = choices[3] === 'confront-suspect' ? suspect.name : ally.name;
@@ -273,29 +384,30 @@ function createEnding(story, endingId, choices) {
     const emailDetail = emailWasForwarded
       ? `The forwarded thread gives the city the unedited trail, too.`
       : `The sealed email keeps the witnesses’ identities out of the public record.`;
-    return {
+    const factionDetail = `The evidence implicates ${story.faction}, and ${story.counterclue} survives as independent corroboration.`;
+    return attachFollowUp({
       ...story.endings.publish,
-      line: `At ${place.name}, ${chain}. By morning the city can see ${motive}. ${trustWasEarned ? `${missing.name}'s evidence stands up to every question` : `the message ${missing.name} sent finally makes sense`}. ${emailDetail} ${suspect.name} goes on record. The signal stays open.`,
-    };
+      line: `At ${place.name}, ${chain}. By morning the city can see ${motive}. ${trustWasEarned ? `${missing.name}'s evidence stands up to every question` : `the message ${missing.name} sent finally makes sense`}. ${emailDetail} ${factionDetail} ${suspect.name} goes on record. The signal stays open.`,
+    }, story, endingId);
   }
 
   if (endingId === 'protect') {
     const emailDetail = emailWasForwarded
       ? `The forwarded thread lets the witnesses verify every handoff.`
       : `The sealed thread leaves no identifying route behind.`;
-    return {
+    return attachFollowUp({
       ...story.endings.protect,
-      line: `${signalIsPublic ? `${correspondent} joins ` : ''}${witness} brings the original to ${place.name} and puts it in the witnesses’ hands. It proves ${motive}. ${trustWasEarned ? `${missing.name} confirms it in ${missing.pronoun} own words` : `${missing.name} agrees the truth belongs to its witnesses`}. ${emailDetail} Nobody gets to edit the original again.`,
-    };
+      line: `${signalIsPublic ? `${correspondent} joins ` : ''}${witness} brings the original to ${place.name} and puts it in the witnesses’ hands. It proves ${motive}. ${trustWasEarned ? `${missing.name} confirms it in ${missing.pronoun} own words` : `${missing.name} agrees the truth belongs to its witnesses`}. ${emailDetail} ${story.faction} cannot erase ${story.counterclue} from the witnesses’ copies. Nobody gets to edit the original again.`,
+    }, story, endingId);
   }
 
   const emailDetail = emailWasForwarded
     ? `The forwarded headers expose the route, so ${missing.name} burns the trail before it can be followed.`
     : `The sealed thread leaves no route to follow.`;
-  return {
+  return attachFollowUp({
     ...story.endings.vanish,
-    line: `By ${place.time}, ${missing.name} is somewhere ${suspect.name} will never think to look. ${signalIsPublic ? `The public signal becomes a decoy; the original disappears at ${place.name}.` : `With no signal to follow, nobody can trace the original to ${place.name}.`} ${emailDetail} You keep the secret about ${motive}. ${trustWasEarned ? `${missing.name} chose to leave, knowing the evidence survived somewhere safe` : `${missing.name} leaves without a name attached`}.`,
-  };
+    line: `By ${place.time}, ${missing.name} is somewhere ${suspect.name} will never think to look. ${signalIsPublic ? `The public signal becomes a decoy; the original disappears at ${place.name}.` : `With no signal to follow, nobody can trace the original to ${place.name}.`} ${emailDetail} You keep the secret about ${motive}. ${story.complication} ${trustWasEarned ? `${missing.name} chose to leave, knowing the evidence survived somewhere safe` : `${missing.name} leaves without a name attached`}.`,
+  }, story, endingId);
 }
 
 export function discoverStoryEvidence(progress, evidenceId) {

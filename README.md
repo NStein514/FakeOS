@@ -1,10 +1,18 @@
 # Dead Letter — FakeOS
 
-A self-contained, responsive, desktop-and-mobile React mystery played through Mara’s fictional phone. Explore Messages, Mail, Contacts, Files, and the Wave social feed; revealing a story clue can surface an encrypted contact, recover a hidden backup, and alter the social feed.
+A self-contained, responsive, desktop-and-mobile React mystery played through Mara’s fictional phone. Explore Messages, Mail, Contacts, Files, and the Wave social feed; clues can surface an encrypted contact, recover a hidden backup, and alter the feed.
 
-The offline **Afterlight Story Loom** composes each episode from a replayable seed and authored characters, locations, evidence, signals, motives, and narrative rules. Five branching chapters move through Messages, Wave, Contacts, Mail, and Files. Four consequential choices feed three distinct endings, including choices to publish, protect, or erase the evidence. The Loom reports more than a trillion authored story-and-path combinations; it needs no AI service, API key, or network connection.
+## Afterlight Story Loom
 
-Progress, messages, discovered evidence, and your notebook save locally in this browser. Starting a new story archives the current run (up to eight runs), and you can reopen an archived story from the notebook. Older four-chapter saves are kept in the archive when the updated app loads.
+The offline Story Loom composes each episode from a replayable seed and authored characters, factions, locations, artifacts, motives, signals, omens, complications, counter-clues, memory fragments, and branching narrative rules. Five chapters take place across Messages, Wave, Contacts, Mail, and Files. Four choices shape one of three endings: publish the evidence, protect its witnesses, or erase the trail.
+
+Each ending unlocks an optional, distinct follow-up episode: **The Witness Network**, **The Unwritten Room**, or **The Number That Stayed**. Start the follow-up from the ending card, or begin another mystery instead. The sequel seed is derived from the original seed and ending, so the unlocked arc replays consistently on this device.
+
+The library currently describes more than **1.2 quadrillion authored story-and-choice combinations**. Generation is deterministic and local; no AI service, API key, or network connection is required.
+
+## Local saves
+
+Progress, messages, discovered evidence, and the notebook save locally in this browser. Starting a new story or follow-up archives the current run (up to eight runs); reopen archived stories from the notebook. Older four-chapter stories are archived on upgrade, and previous five-chapter saves are reconstructed using their existing choices so they gain the new narrative elements without losing progress.
 
 ## Run it locally
 
