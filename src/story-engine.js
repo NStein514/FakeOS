@@ -106,6 +106,15 @@ const COUNTERCLUES = [
   'an empty audio track that still casts a waveform-shaped shadow',
 ];
 
+const RED_HERRING_CLAIMS = [
+  'An archived neighborhood bulletin names a witness at a place they never visited.',
+  'A cached transit notice claims the suspect boarded a train that did not run.',
+  'An anonymous post says the original was moved to a location missing from the official record.',
+  'A duplicated directory entry ties the case to a person with no matching call history.',
+  'A corrected timetable points to a meeting that conflicts with every surviving timestamp.',
+  'A mirror site repeats a rumor word-for-word, then labels the repetition as corroboration.',
+];
+
 const MEMORY_FRAGMENTS = [
   'You promised to come back before the lamps went out.',
   'We said we would remember it differently, not forget it.',
@@ -192,7 +201,7 @@ const CHARACTER_CONFIGURATIONS = ROSTERS.missing.reduce((total, missing) => tota
   .filter((ally) => ally !== missing.name)
   .reduce((count, ally) => count + ROSTERS.suspect
     .filter((suspect) => suspect !== missing.name && suspect !== ally).length, 0), 0);
-export const STORY_TEMPLATE_COUNT = CHARACTER_CONFIGURATIONS * ROSTERS.correspondent.length * PLACES.length * ARTIFACTS.length * MOTIVES.length * SIGNALS.length * OMENS.length * EPITHETS.length * FACTIONS.length * COMPLICATIONS.length * COUNTERCLUES.length * MEMORY_FRAGMENTS.length * 2 ** 4 * 3;
+export const STORY_TEMPLATE_COUNT = CHARACTER_CONFIGURATIONS * ROSTERS.correspondent.length * PLACES.length * ARTIFACTS.length * MOTIVES.length * SIGNALS.length * OMENS.length * EPITHETS.length * FACTIONS.length * COMPLICATIONS.length * COUNTERCLUES.length * MEMORY_FRAGMENTS.length * RED_HERRING_CLAIMS.length * 2 ** 4 * 3;
 
 export function createStory(seed) {
   const normalizedSeed = String(seed || 'afterlight').slice(0, 80);
@@ -212,6 +221,11 @@ export function createStory(seed) {
   const complication = COMPLICATIONS[choose(COMPLICATIONS.length)];
   const counterclue = COUNTERCLUES[choose(COUNTERCLUES.length)];
   const memoryFragment = MEMORY_FRAGMENTS[choose(MEMORY_FRAGMENTS.length)];
+  const redHerring = {
+    person: selectDistinct(choose, ROSTERS.suspect, [missing.name, ally.name, suspect.name]),
+    place: PLACES.filter((candidate) => candidate.name !== place.name)[choose(PLACES.length - 1)],
+    claim: RED_HERRING_CLAIMS[choose(RED_HERRING_CLAIMS.length)],
+  };
 
   return {
     seed: normalizedSeed,
@@ -229,6 +243,7 @@ export function createStory(seed) {
     complication,
     counterclue,
     memoryFragment,
+    redHerring,
     episodeNumber: 1,
     chapters: [
       {
@@ -313,6 +328,19 @@ export function createStoryState(seed = makeStorySeed()) {
     choices: {},
     ending: null,
     discoveries: [],
+    investigation: { browser: null, calendar: null },
+  };
+}
+
+export function recordInvestigationChoice(progress, app, choice) {
+  const allowed = {
+    browser: ['pursue', 'flag'],
+    calendar: ['verify', 'trust'],
+  };
+  if (!progress?.story || !allowed[app]?.includes(choice) || progress.investigation?.[app]) return progress;
+  return {
+    ...progress,
+    investigation: { browser: null, calendar: null, ...progress.investigation, [app]: choice },
   };
 }
 
@@ -326,7 +354,7 @@ export function chooseStoryBranch(progress, branchId) {
     ...progress,
     choices,
     chapter: progress.chapter === STORY_CHAPTER_COUNT ? STORY_CHAPTER_COUNT : progress.chapter + 1,
-    ending: progress.chapter === STORY_CHAPTER_COUNT ? createEnding(progress.story, branchId, choices) : null,
+    ending: progress.chapter === STORY_CHAPTER_COUNT ? createEnding(progress.story, branchId, choices, progress.investigation) : null,
   };
   return { progress: result, selected, chapter };
 }
@@ -369,13 +397,28 @@ export function createSequelStory(parentStory, ending) {
   };
 }
 
-function createEnding(story, endingId, choices) {
+function endingTitleForInvestigation(ending, investigation) {
+  const followedFalseLead = investigation.calendar === 'trust'
+    || (investigation.browser === 'pursue' && investigation.calendar !== 'verify');
+  return followedFalseLead ? { ...ending, title: `${ending.title} — False Trail` } : ending;
+}
+
+function createEnding(story, endingId, choices, investigation = {}) {
   const { missing, ally, suspect, place, motive } = story;
   const correspondent = story.correspondent.name;
   const signalIsPublic = choices[2] === 'broadcast';
   const trustWasEarned = choices[1] === 'verify';
   const witness = choices[3] === 'confront-suspect' ? suspect.name : ally.name;
   const emailWasForwarded = choices[4] === 'forward-email';
+  const investigationDetail = investigation.calendar === 'trust'
+    ? `An anonymous calendar edit led the search to ${story.redHerring.place.name}, costing the witnesses precious time.`
+    : investigation.browser === 'pursue' && investigation.calendar !== 'verify'
+      ? `The cached lead sent the search toward ${story.redHerring.place.name} and delayed the recovery.`
+      : investigation.browser === 'pursue' && investigation.calendar === 'verify'
+        ? `The calendar check exposed the cached claim about ${story.redHerring.person} as false before it could derail the search.`
+        : investigation.browser === 'flag'
+          ? `You marked the claim about ${story.redHerring.person} unverified and kept the team on the real trail.`
+          : '';
 
   if (endingId === 'publish') {
     const chain = signalIsPublic
@@ -386,8 +429,8 @@ function createEnding(story, endingId, choices) {
       : `The sealed email keeps the witnesses’ identities out of the public record.`;
     const factionDetail = `The evidence implicates ${story.faction}, and ${story.counterclue} survives as independent corroboration.`;
     return attachFollowUp({
-      ...story.endings.publish,
-      line: `At ${place.name}, ${chain}. By morning the city can see ${motive}. ${trustWasEarned ? `${missing.name}'s evidence stands up to every question` : `the message ${missing.name} sent finally makes sense`}. ${emailDetail} ${factionDetail} ${suspect.name} goes on record. The signal stays open.`,
+      ...endingTitleForInvestigation(story.endings.publish, investigation),
+      line: `At ${place.name}, ${chain}. By morning the city can see ${motive}. ${investigationDetail} ${trustWasEarned ? `${missing.name}'s evidence stands up to every question` : `the message ${missing.name} sent finally makes sense`}. ${emailDetail} ${factionDetail} ${suspect.name} goes on record. The signal stays open.`,
     }, story, endingId);
   }
 
@@ -396,8 +439,8 @@ function createEnding(story, endingId, choices) {
       ? `The forwarded thread lets the witnesses verify every handoff.`
       : `The sealed thread leaves no identifying route behind.`;
     return attachFollowUp({
-      ...story.endings.protect,
-      line: `${signalIsPublic ? `${correspondent} joins ` : ''}${witness} brings the original to ${place.name} and puts it in the witnesses’ hands. It proves ${motive}. ${trustWasEarned ? `${missing.name} confirms it in ${missing.pronoun} own words` : `${missing.name} agrees the truth belongs to its witnesses`}. ${emailDetail} ${story.faction} cannot erase ${story.counterclue} from the witnesses’ copies. Nobody gets to edit the original again.`,
+      ...endingTitleForInvestigation(story.endings.protect, investigation),
+      line: `${signalIsPublic ? `${correspondent} joins ` : ''}${witness} brings the original to ${place.name} and puts it in the witnesses’ hands. It proves ${motive}. ${investigationDetail} ${trustWasEarned ? `${missing.name} confirms it in ${missing.pronoun} own words` : `${missing.name} agrees the truth belongs to its witnesses`}. ${emailDetail} ${story.faction} cannot erase ${story.counterclue} from the witnesses’ copies. Nobody gets to edit the original again.`,
     }, story, endingId);
   }
 
@@ -405,8 +448,8 @@ function createEnding(story, endingId, choices) {
     ? `The forwarded headers expose the route, so ${missing.name} burns the trail before it can be followed.`
     : `The sealed thread leaves no route to follow.`;
   return attachFollowUp({
-    ...story.endings.vanish,
-    line: `By ${place.time}, ${missing.name} is somewhere ${suspect.name} will never think to look. ${signalIsPublic ? `The public signal becomes a decoy; the original disappears at ${place.name}.` : `With no signal to follow, nobody can trace the original to ${place.name}.`} ${emailDetail} You keep the secret about ${motive}. ${story.complication} ${trustWasEarned ? `${missing.name} chose to leave, knowing the evidence survived somewhere safe` : `${missing.name} leaves without a name attached`}.`,
+    ...endingTitleForInvestigation(story.endings.vanish, investigation),
+    line: `By ${place.time}, ${missing.name} is somewhere ${suspect.name} will never think to look. ${investigationDetail} ${signalIsPublic ? `The public signal becomes a decoy; the original disappears at ${place.name}.` : `With no signal to follow, nobody can trace the original to ${place.name}.`} ${emailDetail} You keep the secret about ${motive}. ${story.complication} ${trustWasEarned ? `${missing.name} chose to leave, knowing the evidence survived somewhere safe` : `${missing.name} leaves without a name attached`}.`,
   }, story, endingId);
 }
 
